@@ -10,8 +10,6 @@ namespace Bomber_Snake
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
-        //public static Point windowSize = new Point(1056, 1056);
-
         Vector2 snakePos = Vector2.Zero;
 
         Snake snake;
