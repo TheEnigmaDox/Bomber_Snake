@@ -14,7 +14,7 @@ namespace Bomber_Snake
 
         Vector2 snakePos = Vector2.Zero;
 
-        Texture2D snake;
+        Snake snake;
 
         Texture2D testRender;
         RenderTarget2D playArea;
@@ -24,7 +24,8 @@ namespace Bomber_Snake
         GameSettings settings;
 
 #if DEBUG
-        SpriteFont debugFont;
+        public static SpriteFont debugFont;
+        public static Texture2D debugPixel;
 #endif
 
         public Game1()
@@ -58,10 +59,11 @@ namespace Bomber_Snake
             testRender = Content.Load<Texture2D>("RenderTarget");
             playArea = new RenderTarget2D(_graphics.GraphicsDevice, 1024, 1024);
 
-            snake = Content.Load<Texture2D>("Textures/SnakeHead");
+            snake = new Snake(Content.Load<Texture2D>("Textures/SnakeHead"), new Rectangle(0, 0, 32, 32));
 
 #if DEBUG
             debugFont = Content.Load<SpriteFont>("Fonts/DebugFont");
+            debugPixel = Content.Load<Texture2D>("Textures/DebugPixel");
 #endif
         }
 
@@ -76,28 +78,7 @@ namespace Bomber_Snake
 
             settings.UpdateMe();
 
-            if (kb_curr.IsKeyDown(Keys.Up) && kb_old.IsKeyUp(Keys.Up))
-            {
-                snakePos.Y -= 32;
-            }
-
-            if (kb_curr.IsKeyDown(Keys.Down) && kb_old.IsKeyUp(Keys.Down))
-            {
-                snakePos.Y += 32;
-            }
-
-            if (kb_curr.IsKeyDown(Keys.Right) && kb_old.IsKeyUp(Keys.Right))
-            {
-                snakePos.X += 32;
-            }
-
-            if (kb_curr.IsKeyDown(Keys.Left) && kb_old.IsKeyUp(Keys.Left))
-            {
-                snakePos.X -= 32;
-            }
-
-            snakePos.X = MathHelper.Clamp(snakePos.X, 0, playArea.Width - snake.Width);
-            snakePos.Y = MathHelper.Clamp(snakePos.Y, 0, playArea.Height - snake.Height);
+            snake.UpdateMe(gameTime, kb_curr, kb_old, playArea);
 
             kb_old = kb_curr;
 
@@ -108,18 +89,19 @@ namespace Bomber_Snake
 
         protected override void Draw(GameTime gameTime)
         {
-
+            GraphicsDevice.Clear(Color.CornflowerBlue);
             // TODO: Add your drawing code here
 
             GraphicsDevice.SetRenderTarget(playArea);
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            
             _spriteBatch.Begin();
             _spriteBatch.Draw(testRender, Vector2.Zero, Color.White);
 
-            _spriteBatch.Draw(snake, snakePos, Color.White);
+            snake.DrawMe(_spriteBatch);
 
 #if DEBUG
-            _spriteBatch.DrawString(debugFont, snakePos.ToString(), Vector2.Zero, Color.White);
+            _spriteBatch.DrawString(debugFont, snake.Rect.Location.ToString(), Vector2.Zero, Color.White);
+            _spriteBatch.Draw(debugPixel, snake.Collision, Color.White);
 #endif
 
             _spriteBatch.End();
