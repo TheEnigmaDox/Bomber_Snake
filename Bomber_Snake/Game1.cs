@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Bomber_Snake
@@ -12,7 +13,8 @@ namespace Bomber_Snake
 
         Vector2 snakePos = Vector2.Zero;
 
-        Snake snake;
+        List<Snake> snakeList;
+        List<Food> foodList;
 
         Texture2D testRender;
         RenderTarget2D playArea;
@@ -45,6 +47,9 @@ namespace Bomber_Snake
 
             settings.SetScreenRes(0);
 
+            snakeList = new List<Snake>();
+            foodList = new List<Food>();
+
             base.Initialize();
         }
 
@@ -57,7 +62,9 @@ namespace Bomber_Snake
             testRender = Content.Load<Texture2D>("RenderTarget");
             playArea = new RenderTarget2D(_graphics.GraphicsDevice, 1024, 1024);
 
-            snake = new Snake(Content.Load<Texture2D>("Textures/SnakeHead"), new Rectangle(0, 0, 32, 32));
+            snakeList.Add(new Snake(Content.Load<Texture2D>("Textures/SnakeHead"), new Rectangle(0, 0, 32, 32)));
+
+            foodList.Add(new Food(Content.Load<Texture2D>("Textures/Food"), new Rectangle(64, 64, 32, 32)));
 
 #if DEBUG
             debugFont = Content.Load<SpriteFont>("Fonts/DebugFont");
@@ -76,11 +83,34 @@ namespace Bomber_Snake
 
             settings.UpdateMe();
 
-            snake.UpdateMe(gameTime, kb_curr, kb_old, playArea);
+            foreach(Snake snake in snakeList)
+            {
+                snake.UpdateMe(gameTime, kb_curr, kb_old, playArea);
+            }
+            //snakeList.UpdateMe(gameTime, kb_curr, kb_old, playArea);
+
+            if (foodList.Count > 0)
+            {
+                for (int i = 0; i < foodList.Count; i++)
+                {
+                    Food food = foodList[i];
+                    food.UpdateMe(snakeList, foodList);
+                } 
+            }
+            else if(foodList.Count == 0)
+            {
+                foodList.Add(new Food(Content.Load<Texture2D>("Textures/Food"),
+                    new Rectangle(GameSettings.RNG.Next(1, 33) * 32,
+                    GameSettings.RNG.Next(1, 33) * 32,
+                    32,
+                    32)));
+                snakeList.Add(new Snake(Content.Load<Texture2D>("Textures/SnakeHead"),
+                        new Rectangle(0, 0, 32, 32)));
+            }
 
             kb_old = kb_curr;
 
-            Debug.WriteLine(snakePos);
+            Debug.WriteLine(snakeList.Count);
 
             base.Update(gameTime);
         }
@@ -95,11 +125,21 @@ namespace Bomber_Snake
             _spriteBatch.Begin();
             _spriteBatch.Draw(testRender, Vector2.Zero, Color.White);
 
-            snake.DrawMe(_spriteBatch);
+            foreach (Snake snake in snakeList)
+            {
+                snake.DrawMe(_spriteBatch);
+            }
+
+            foreach(Food food in foodList)
+            {
+                food.DrawMe(_spriteBatch);
+            }
+
+            //snakeList.DrawMe(_spriteBatch);
 
 #if DEBUG
-            _spriteBatch.DrawString(debugFont, snake.Rect.Location.ToString(), Vector2.Zero, Color.White);
-            _spriteBatch.Draw(debugPixel, snake.Collision, Color.White);
+            //_spriteBatch.DrawString(debugFont, snakeList[0].Rect.Location.ToString(), Vector2.Zero, Color.White);
+            //_spriteBatch.Draw(debugPixel, snakeList.Collision, Color.White);
 #endif
 
             _spriteBatch.End();

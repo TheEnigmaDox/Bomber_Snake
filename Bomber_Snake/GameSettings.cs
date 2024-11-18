@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.Collections.Generic;
 
 namespace Bomber_Snake
@@ -8,6 +9,8 @@ namespace Bomber_Snake
     {
         private int currentRes = 0;
         private float scale = 1f;
+
+        public static Random RNG = new Random();
 
         private List<Point> m_windowSize = new List<Point> ();
 
