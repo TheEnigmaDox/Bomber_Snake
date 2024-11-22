@@ -7,19 +7,30 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
+using System.Diagnostics;
 
 namespace Bomber_Snake
 {
+    enum Direction
+    {
+        North,
+        East,
+        South,
+        West
+    }
+
     internal class Snake : MotionGraphic
     {
-        float m_moveTimer = 0f;
+        private float m_moveTimer = 0f;
 
-        Texture2D m_snakeTxr;
+        private Texture2D m_snakeTxr;
 
-        Rectangle m_colRect;
-        Rectangle m_snakeRect;
+        private Rectangle m_colRect;
+        private Rectangle m_snakeRect;
 
         private Direction m_direction;
+
+        private List<Direction> m_directionList;
 
         public Rectangle Collision
         {
@@ -29,12 +40,25 @@ namespace Bomber_Snake
             }
         }
 
-        enum Direction
+        public Direction Facing
         {
-            North,
-            East,
-            South,
-            West
+            get
+            {
+                return m_direction;
+            }
+            set
+            {
+                m_direction = value;
+            }
+        }
+
+        public List<Direction> Directions
+        {
+            get
+            {
+                return m_directionList;
+                //m_directionList = value;
+            }
         }
 
         public Snake(Texture2D txrImage, Rectangle rect)
@@ -44,10 +68,15 @@ namespace Bomber_Snake
             m_snakeRect = rect;
 
             m_colRect = new Rectangle((int)m_position.X + 4, (int)m_position.Y + 4, m_snakeTxr.Width - 8, m_snakeTxr.Height - 8);
+
+            m_directionList = new List<Direction>();    
         }
 
-        public void UpdateMe(GameTime gt, KeyboardState kb_curr, KeyboardState kb_old, RenderTarget2D playArea)
+        public void UpdateMe(GameTime gt, KeyboardState kb_curr, KeyboardState kb_old, RenderTarget2D playArea,
+            List<Snake> snakeList)
         {
+            Direction newHeadPos = m_direction;
+
             UpdateCollision();
 
             MoveSnake(kb_curr, kb_old);
@@ -75,6 +104,20 @@ namespace Bomber_Snake
 
             m_position.X = MathHelper.Clamp(m_position.X, 0, playArea.Width - m_snakeRect.Width);
             m_position.Y = MathHelper.Clamp(m_position.Y, 0, playArea.Height - m_snakeRect.Height);
+
+            for(int i = snakeList.Count - 1; i > 0; i--)
+            {
+                snakeList[i].Facing = snakeList[i - 1].Facing;
+            }
+
+            snakeList[0].Facing = newHeadPos;
+
+            for(int i = 0; i < snakeList.Count; i++)
+            {
+                Debug.WriteLine("Snake part: " + snakeList[i] + "Facing: " + snakeList[i].Facing);
+            }
+
+            Debug.WriteLine("Direction List Count: " + m_directionList.Count);
         }
 
         void UpdateCollision()
@@ -88,28 +131,24 @@ namespace Bomber_Snake
             {
                 m_moveTimer = 0.001f;
                 m_direction = Direction.North;
-                //m_position.Y -= 32;
             }
 
             if (kb_curr.IsKeyDown(Keys.S) && kb_old.IsKeyUp(Keys.S))
             {
                 m_moveTimer = 0.001f;
                 m_direction = Direction.South;
-                //m_position.Y += 32;
             }
 
             if (kb_curr.IsKeyDown(Keys.D) && kb_old.IsKeyUp(Keys.D))
             {
                 m_moveTimer = 0.001f;
                 m_direction = Direction.East;
-                //m_position.X += 32;
             }
 
             if (kb_curr.IsKeyDown(Keys.A) && kb_old.IsKeyUp(Keys.A))
             {
                 m_moveTimer = 0.001f;
                 m_direction = Direction.West;
-                //m_position.X -= 32;
             }
         }
     }
@@ -129,6 +168,7 @@ namespace Bomber_Snake
             if (snake[0].Collision.Intersects(m_colRect))
             {
                 food.Remove(this);
+                snake[0].Directions.Add(snake[0].Facing);
             }
         }
     }

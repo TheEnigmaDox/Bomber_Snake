@@ -85,7 +85,7 @@ namespace Bomber_Snake
 
             foreach(Snake snake in snakeList)
             {
-                snake.UpdateMe(gameTime, kb_curr, kb_old, playArea);
+                snake.UpdateMe(gameTime, kb_curr, kb_old, playArea, snakeList);
             }
             //snakeList.UpdateMe(gameTime, kb_curr, kb_old, playArea);
 
@@ -104,8 +104,17 @@ namespace Bomber_Snake
                     GameSettings.RNG.Next(1, 33) * 32,
                     32,
                     32)));
-                snakeList.Add(new Snake(Content.Load<Texture2D>("Textures/SnakeHead"),
-                        new Rectangle(0, 0, 32, 32)));
+
+                switch (snakeList[0].Facing)
+                {
+                    case Direction.North:
+                        snakeList.Add(new Snake(Content.Load<Texture2D>("Textures/SnakeHead"),
+                            new Rectangle(snakeList[0].Rect.X, snakeList[0].Rect.Y + 32, 32, 32)));
+                        break;
+                }
+
+                //snakeList.Add(new Snake(Content.Load<Texture2D>("Textures/SnakeHead"),
+                //        new Rectangle(0, 0, 32, 32)));
             }
 
             kb_old = kb_curr;
