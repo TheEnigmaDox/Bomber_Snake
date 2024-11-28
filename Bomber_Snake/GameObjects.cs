@@ -3,11 +3,6 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Security.Cryptography.X509Certificates;
-using System.Diagnostics;
 
 namespace Bomber_Snake
 {
@@ -21,6 +16,11 @@ namespace Bomber_Snake
 
     internal class Snake : MotionGraphic
     {
+        private int m_gridSize = 32;
+
+        private bool m_move = false;
+        private bool m_addPart = false;
+
         private float m_moveTimer = 0f;
 
         private Texture2D m_snakeTxr;
@@ -28,9 +28,7 @@ namespace Bomber_Snake
         private Rectangle m_colRect;
         private Rectangle m_snakeRect;
 
-        private Direction m_direction;
-
-        private List<Direction> m_directionList;
+        private Vector2 m_direction;
 
         public Rectangle Collision
         {
@@ -40,24 +38,23 @@ namespace Bomber_Snake
             }
         }
 
-        public Direction Facing
+        public bool MovementTrigger
         {
             get
             {
-                return m_direction;
+                return m_move;
             }
             set
             {
-                m_direction = value;
+                m_move = value;
             }
         }
 
-        public List<Direction> Directions
+        public bool AddPart
         {
-            get
+            set
             {
-                return m_directionList;
-                //m_directionList = value;
+                m_addPart = value;
             }
         }
 
@@ -67,89 +64,125 @@ namespace Bomber_Snake
             m_snakeTxr = txrImage;
             m_snakeRect = rect;
 
-            m_colRect = new Rectangle((int)m_position.X + 4, (int)m_position.Y + 4, m_snakeTxr.Width - 8, m_snakeTxr.Height - 8);
+            //m_direction = new Vector2(1, 0);
 
-            m_directionList = new List<Direction>();    
+            m_colRect = new Rectangle((int)m_position.X + 4, (int)m_position.Y + 4, m_snakeTxr.Width - 8, m_snakeTxr.Height - 8);
+            
         }
 
-        public void UpdateMe(GameTime gt, KeyboardState kb_curr, KeyboardState kb_old, RenderTarget2D playArea,
-            List<Snake> snakeList)
+        public void UpdateMe(GameTime gt, KeyboardState kb_curr, KeyboardState kb_old, RenderTarget2D playArea)
         {
-            Direction newHeadPos = m_direction;
-
             UpdateCollision();
 
-            MoveSnake(kb_curr, kb_old);
-
-            if (m_moveTimer > 0)
+            if(kb_curr.GetPressedKeyCount() > 0)
             {
-                m_moveTimer -= (float)gt.ElapsedGameTime.TotalSeconds;
+                Keys[] pressedKeys = kb_curr.GetPressedKeys();
 
-                switch (m_direction)
+                for(int i = 0; i < pressedKeys.Length; i++)
                 {
-                    case Direction.North:
-                        m_position.Y -= 32;
+                    if(m_moveTimer > 0)
+                    {
+                        m_move = false;
+                    }
+                    else if (pressedKeys[i] == Keys.A && m_moveTimer <= 0 ||
+                        pressedKeys[i] == Keys.D && m_moveTimer <= 0 ||
+                        pressedKeys[i] == Keys.W && m_moveTimer <= 0 ||
+                        pressedKeys[i] == Keys.S && m_moveTimer <= 0)
+                    {
+                        m_move = true;
+                        m_moveTimer = 0.001f;
                         break;
-                    case Direction.East:
-                        m_position.X += 32;
-                        break;
-                    case Direction.South:
-                        m_position.Y += 32;
-                        break;
-                    case Direction.West:
-                        m_position.X -= 32;
-                        break;
+                    }
                 }
             }
+            else
+            {
+                m_moveTimer -= (float)gt.ElapsedGameTime.TotalSeconds;
+            }
+
+            CheckInputs(kb_curr, kb_old);
 
             m_position.X = MathHelper.Clamp(m_position.X, 0, playArea.Width - m_snakeRect.Width);
             m_position.Y = MathHelper.Clamp(m_position.Y, 0, playArea.Height - m_snakeRect.Height);
 
-            for(int i = snakeList.Count - 1; i > 0; i--)
+            //Debug.WriteLine("Direction List Count: " + m_directionList.Count);
+        }
+
+        public void SetUpBody(List<Snake> parts)
+        {
+            //Create a position for the head to move to.
+            Vector2 newHeadPosition = m_position + m_direction;
+
+            //Loop through the list of parts backwards...
+            for (int i = parts.Count - 1; i > 0; i--)
             {
-                snakeList[i].Facing = snakeList[i - 1].Facing;
+                //...Set each part to the position of the one before it...
+                parts[i].m_position = parts[i - 1].m_position;
             }
 
-            snakeList[0].Facing = newHeadPos;
+            //Move the head to the new position.
+            parts[0].m_position = newHeadPosition;
+        }
 
-            for(int i = 0; i < snakeList.Count; i++)
+        //Check the inputs of the keyboard and only change the direction if a viable direction is chosen.
+        void CheckInputs(KeyboardState kb_curr, KeyboardState kb_old)
+        {
+            //If W is pressed and the direction is not equal to down...
+            if (kb_curr.IsKeyDown(Keys.W) && kb_old.IsKeyUp(Keys.W) && m_direction != new Vector2(0, 1))
             {
-                Debug.WriteLine("Snake part: " + snakeList[i] + "Facing: " + snakeList[i].Facing);
+                //...Set direction to up.
+                m_direction = new Vector2(0, -1);
+            }
+            //If S is pressed and direction is not equal to up...
+            else if (kb_curr.IsKeyDown(Keys.S) && kb_old.IsKeyUp(Keys.S) && m_direction != new Vector2(0, -1))
+            {
+                //...Set the direction to down.
+                m_direction = new Vector2(0, 1);
+            }
+            //If A is pressed and the direction is not equal to right...
+            else if (kb_curr.IsKeyDown(Keys.A) && kb_old.IsKeyUp(Keys.A) && m_direction != new Vector2(1, 0))
+            {
+                //...Set the direction to left.
+                m_direction = new Vector2(-1, 0);
+            }
+            //If D is pressed and direction is not equal to to left...
+            else if (kb_curr.IsKeyDown(Keys.D) && kb_old.IsKeyUp(Keys.D) && m_direction != new Vector2(-1, 0))
+            {
+                //... Set direction to right.
+                m_direction = new Vector2(1, 0);
+            }
+        }
+
+        //Function to update the snakes position.
+        public void UpdateSnakePosition(GameTime gt, List<Snake> parts) 
+        {
+            //Create a position for the head to move to.
+            Vector2 newHeadPosition = m_position + (m_direction * m_gridSize);
+
+            if (m_addPart)
+            {
+                parts.Add(new Snake(m_snakeTxr,
+                        new Rectangle((int)parts[parts.Count - 1].Position.X,
+                        (int)parts[parts.Count - 1].Position.Y,
+                        32, 32)));
+
+                m_addPart = false;
             }
 
-            Debug.WriteLine("Direction List Count: " + m_directionList.Count);
+            //Loop through the list of parts backwards...
+            for(int i = parts.Count - 1; i > 0; i--)
+            {
+                //...Set each part to the position before it.
+                parts[i].m_position = parts[i - 1].m_position;
+            }
+
+            //Move the head to the new position.
+            parts[0].m_position = newHeadPosition;
         }
 
         void UpdateCollision()
         {
             m_colRect = new Rectangle((int)m_position.X + 4, (int)m_position.Y + 4, m_snakeTxr.Width - 8, m_snakeTxr.Height - 8);
-        }
-
-        void MoveSnake(KeyboardState kb_curr, KeyboardState kb_old)
-        {
-            if (kb_curr.IsKeyDown(Keys.W) && kb_old.IsKeyUp(Keys.W))
-            {
-                m_moveTimer = 0.001f;
-                m_direction = Direction.North;
-            }
-
-            if (kb_curr.IsKeyDown(Keys.S) && kb_old.IsKeyUp(Keys.S))
-            {
-                m_moveTimer = 0.001f;
-                m_direction = Direction.South;
-            }
-
-            if (kb_curr.IsKeyDown(Keys.D) && kb_old.IsKeyUp(Keys.D))
-            {
-                m_moveTimer = 0.001f;
-                m_direction = Direction.East;
-            }
-
-            if (kb_curr.IsKeyDown(Keys.A) && kb_old.IsKeyUp(Keys.A))
-            {
-                m_moveTimer = 0.001f;
-                m_direction = Direction.West;
-            }
         }
     }
 
@@ -168,7 +201,6 @@ namespace Bomber_Snake
             if (snake[0].Collision.Intersects(m_colRect))
             {
                 food.Remove(this);
-                snake[0].Directions.Add(snake[0].Facing);
             }
         }
     }

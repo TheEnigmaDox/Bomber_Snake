@@ -31,6 +31,14 @@ namespace Bomber_Snake
         protected Vector2 m_position;
         protected Vector2 m_velocity;
 
+        public Vector2 Position
+        {
+            get
+            {
+                return m_position;
+            }
+        }
+
         public Rectangle Rect
         {
             get
